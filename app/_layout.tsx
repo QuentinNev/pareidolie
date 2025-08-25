@@ -1,5 +1,10 @@
+import { CanvasProvider } from "@/contexts/CanvasContext";
 import { Stack } from "expo-router";
 
 export default function RootLayout() {
-  return <Stack />;
+  return (
+    <CanvasProvider>
+      <Stack />
+    </CanvasProvider>
+  );
 }
