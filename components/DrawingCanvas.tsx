@@ -7,8 +7,9 @@ import { PanResponder } from "react-native";
 type Stroke = { path: SkPath; color: string; strokeWidth: number };
 
 export default function DrawingCanvas() {
-  const { color, registerClear } = useContext(CanvasContext);
+  const { color, registerClear, registerUndoRedo } = useContext(CanvasContext);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
+  const [redoStack, setRedoStack] = useState<Stroke[]>([]);
   const strokeWidth = 4;
 
   const panResponder = PanResponder.create({
@@ -16,21 +17,49 @@ export default function DrawingCanvas() {
     onPanResponderGrant: ({ nativeEvent }) => {
       const path = Skia.Path.Make();
       path.moveTo(nativeEvent.locationX, nativeEvent.locationY);
-      setStrokes([...strokes, { path, color, strokeWidth }]);
+      setStrokes((prev) => [...prev, { path, color, strokeWidth }]);
+      setRedoStack([]); // efface la pile redo dès qu’on dessine
     },
     onPanResponderMove: ({ nativeEvent }) => {
-      const updated = [...strokes];
-      updated[updated.length - 1].path.lineTo(
-        nativeEvent.locationX,
-        nativeEvent.locationY
-      );
-      setStrokes(updated);
+      setStrokes((prev) => {
+        if (prev.length === 0) return prev;
+        const updated = [...prev];
+        updated[updated.length - 1].path.lineTo(
+          nativeEvent.locationX,
+          nativeEvent.locationY
+        );
+        return updated;
+      });
     },
   });
 
+  const clear = () => {
+    setStrokes([]);
+    setRedoStack([]);
+  };
+
+  const undo = () => {
+    setStrokes((prev) => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      setRedoStack((rs) => [last, ...rs]);
+      return prev.slice(0, -1);
+    });
+  };
+
+  const redo = () => {
+    setRedoStack((prev) => {
+      if (prev.length === 0) return prev;
+      const [first, ...rest] = prev;
+      setStrokes((s) => [...s, first]);
+      return rest;
+    });
+  };
+
   useEffect(() => {
-    registerClear(() => setStrokes([]));
-  }, [strokes]);
+    registerClear(clear);
+    registerUndoRedo(undo, redo);
+  }, [strokes, redoStack]);
 
   return (
     <Canvas
