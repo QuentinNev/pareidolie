@@ -24,10 +24,19 @@ export default function DrawingCanvas() {
       setStrokes((prev) => {
         if (prev.length === 0) return prev;
         const updated = [...prev];
-        updated[updated.length - 1].path.lineTo(
-          nativeEvent.locationX,
-          nativeEvent.locationY
-        );
+        const current = updated[updated.length - 1];
+
+        // plutôt que lineTo direct -> quadratic bezier pour lisser
+        const x = nativeEvent.locationX;
+        const y = nativeEvent.locationY;
+        const path = current.path;
+
+        // récupérer dernier point
+        const lastPoint = path.getLastPt();
+        const cx = (lastPoint.x + x) / 2;
+        const cy = (lastPoint.y + y) / 2;
+
+        path.quadTo(lastPoint.x, lastPoint.y, cx, cy);
         return updated;
       });
     },
