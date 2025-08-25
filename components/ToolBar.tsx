@@ -1,7 +1,7 @@
 import { CanvasContext } from "@/contexts/CanvasContext";
 import Slider from "@react-native-community/slider";
 import React, { useContext } from "react";
-import { Button, ScrollView, View } from "react-native";
+import { Button, View } from "react-native";
 
 const colors = ["black", "red", "blue", "green", "orange", "purple"];
 
@@ -11,22 +11,17 @@ export default function ToolBar() {
 
   return (
     <View>
-      <ScrollView
-        horizontal
-        contentContainerStyle={{ alignItems: "center" }}
-        showsHorizontalScrollIndicator={false}
-      >
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         {colors.map((c) => (
           <Button key={c} title={c} color={c} onPress={() => setColor(c)} />
         ))}
-      </ScrollView>
-      <ScrollView horizontal>
+      </View>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         <Button title="Clear" onPress={clearCanvas} />
         <Button title="Undo" onPress={undo} />
         <Button title="Redo" onPress={redo} />
-      </ScrollView>
-      <View style={{ paddingHorizontal: 10 }}>
         <Slider
+          style={{ width: 200 }}
           minimumValue={3}
           maximumValue={10}
           step={1}
