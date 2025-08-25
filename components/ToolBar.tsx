@@ -5,7 +5,7 @@ import { Button, ScrollView, View } from "react-native";
 
 const colors = ["black", "red", "blue", "green", "orange", "purple"];
 
-export default function ColorPicker() {
+export default function ToolBar() {
   const { color, setColor, clearCanvas } = useContext(CanvasContext);
 
   return (
