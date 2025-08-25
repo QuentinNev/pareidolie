@@ -7,17 +7,17 @@ import { PanResponder } from "react-native";
 type Stroke = { path: SkPath; color: string; strokeWidth: number };
 
 export default function DrawingCanvas() {
-  const { color, registerClear, registerUndoRedo } = useContext(CanvasContext);
+  const { color, size, registerClear, registerUndoRedo } =
+    useContext(CanvasContext);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [redoStack, setRedoStack] = useState<Stroke[]>([]);
-  const strokeWidth = 4;
 
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onPanResponderGrant: ({ nativeEvent }) => {
       const path = Skia.Path.Make();
       path.moveTo(nativeEvent.locationX, nativeEvent.locationY);
-      setStrokes((prev) => [...prev, { path, color, strokeWidth }]);
+      setStrokes((prev) => [...prev, { path, color, strokeWidth: size }]);
       setRedoStack([]); // efface la pile redo dès qu’on dessine
     },
     onPanResponderMove: ({ nativeEvent }) => {

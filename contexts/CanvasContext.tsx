@@ -4,6 +4,8 @@ import React, { createContext, ReactNode, useState } from "react";
 type CanvasContextType = {
   color: string;
   setColor: (color: string) => void;
+  size: number;
+  setSize: (size: number) => void;
   clearCanvas: () => void;
   undo: () => void;
   redo: () => void;
@@ -14,6 +16,8 @@ type CanvasContextType = {
 export const CanvasContext = createContext<CanvasContextType>({
   color: "black",
   setColor: () => {},
+  size: 0.1,
+  setSize: () => {},
   clearCanvas: () => {},
   undo: () => {},
   redo: () => {},
@@ -23,6 +27,7 @@ export const CanvasContext = createContext<CanvasContextType>({
 
 export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [color, setColor] = useState("black");
+  const [size, setSize] = useState(0.1);
 
   let clearFn: () => void = () => {};
   let undoFn: () => void = () => {};
@@ -46,6 +51,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       value={{
         color,
         setColor,
+        size,
+        setSize,
         clearCanvas,
         undo,
         redo,
