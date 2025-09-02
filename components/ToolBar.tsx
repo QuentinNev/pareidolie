@@ -1,6 +1,6 @@
 import { CanvasContext } from "@/contexts/CanvasContext";
 import Slider from "@react-native-community/slider";
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { Button, View } from "react-native";
 
 const colors = ["black", "red", "blue", "green", "orange", "purple"];
@@ -8,6 +8,7 @@ const colors = ["black", "red", "blue", "green", "orange", "purple"];
 export default function ToolBar() {
   const { setColor, clearCanvas, undo, redo, setSize } =
     useContext(CanvasContext);
+  const [drawMode, setDrawMode] = useState(true);
 
   return (
     <View>
@@ -26,6 +27,12 @@ export default function ToolBar() {
           maximumValue={10}
           step={1}
           onValueChange={(value: number) => setSize(value)}
+        />
+      </View>
+      <View style={{ marginTop: 10 }}>
+        <Button
+          title={drawMode ? "Switch to Move" : "Switch to Draw"}
+          onPress={() => setDrawMode(!drawMode)}
         />
       </View>
     </View>

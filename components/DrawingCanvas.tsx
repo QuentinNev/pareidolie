@@ -1,8 +1,15 @@
 // DrawingCanvas.tsx
 import { CanvasContext } from "@/contexts/CanvasContext";
-import { Canvas, Path, Skia, SkPath } from "@shopify/react-native-skia";
+import {
+  Canvas,
+  Path,
+  Skia,
+  Image as SkImage,
+  SkPath,
+  useImage,
+} from "@shopify/react-native-skia";
 import React, { useContext, useEffect, useState } from "react";
-import { PanResponder } from "react-native";
+import { PanResponder, View } from "react-native";
 
 type Stroke = { path: SkPath; color: string; strokeWidth: number };
 
@@ -11,31 +18,31 @@ export default function DrawingCanvas() {
     useContext(CanvasContext);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [redoStack, setRedoStack] = useState<Stroke[]>([]);
+  const [drawMode] = useState(true);
+
+  const image = useImage(require("../assets/images/background.png")); // mets ton image ici
 
   const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
+    onStartShouldSetPanResponder: () => drawMode,
     onPanResponderGrant: ({ nativeEvent }) => {
+      if (!drawMode) return;
       const path = Skia.Path.Make();
       path.moveTo(nativeEvent.locationX, nativeEvent.locationY);
       setStrokes((prev) => [...prev, { path, color, strokeWidth: size }]);
-      setRedoStack([]); // efface la pile redo dès qu’on dessine
+      setRedoStack([]);
     },
     onPanResponderMove: ({ nativeEvent }) => {
+      if (!drawMode) return;
       setStrokes((prev) => {
         if (prev.length === 0) return prev;
         const updated = [...prev];
         const current = updated[updated.length - 1];
-
-        // plutôt que lineTo direct -> quadratic bezier pour lisser
         const x = nativeEvent.locationX;
         const y = nativeEvent.locationY;
         const path = current.path;
-
-        // récupérer dernier point
         const lastPoint = path.getLastPt();
         const cx = (lastPoint.x + x) / 2;
         const cy = (lastPoint.y + y) / 2;
-
         path.quadTo(lastPoint.x, lastPoint.y, cx, cy);
         return updated;
       });
@@ -71,19 +78,24 @@ export default function DrawingCanvas() {
   }, [strokes, redoStack]);
 
   return (
-    <Canvas
-      style={{ flex: 1, backgroundColor: "white" }}
-      {...panResponder.panHandlers}
-    >
-      {strokes.map((s, i) => (
-        <Path
-          key={i}
-          path={s.path}
-          color={s.color}
-          style="stroke"
-          strokeWidth={s.strokeWidth}
-        />
-      ))}
-    </Canvas>
+    <View style={{ flex: 1 }}>
+      <Canvas
+        style={{ flex: 1, backgroundColor: "white" }}
+        {...panResponder.panHandlers}
+      >
+        {image && (
+          <SkImage image={image} x={0} y={0} width={400} height={400} />
+        )}
+        {strokes.map((s, i) => (
+          <Path
+            key={i}
+            path={s.path}
+            color={s.color}
+            style="stroke"
+            strokeWidth={s.strokeWidth}
+          />
+        ))}
+      </Canvas>
+    </View>
   );
 }
