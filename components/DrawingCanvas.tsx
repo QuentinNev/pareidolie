@@ -14,11 +14,10 @@ import { PanResponder, View } from "react-native";
 type Stroke = { path: SkPath; color: string; strokeWidth: number };
 
 export default function DrawingCanvas() {
-  const { color, size, registerClear, registerUndoRedo } =
+  const { color, size, registerClear, registerUndoRedo, drawMode } =
     useContext(CanvasContext);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [redoStack, setRedoStack] = useState<Stroke[]>([]);
-  const [drawMode] = useState(true);
 
   const image = useImage(require("../assets/images/background.png")); // mets ton image ici
 

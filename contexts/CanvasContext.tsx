@@ -1,6 +1,6 @@
 // app/context/CanvasContext.tsx
 import React, { createContext, ReactNode, useState } from "react";
-
+// CanvasContext.tsx
 type CanvasContextType = {
   color: string;
   setColor: (color: string) => void;
@@ -11,6 +11,8 @@ type CanvasContextType = {
   redo: () => void;
   registerClear: (fn: () => void) => void;
   registerUndoRedo: (undoFn: () => void, redoFn: () => void) => void;
+  drawMode: boolean;
+  setDrawMode: (v: boolean) => void;
 };
 
 export const CanvasContext = createContext<CanvasContextType>({
@@ -23,11 +25,14 @@ export const CanvasContext = createContext<CanvasContextType>({
   redo: () => {},
   registerClear: () => {},
   registerUndoRedo: () => {},
+  drawMode: true,
+  setDrawMode: () => {},
 });
 
 export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [color, setColor] = useState("black");
   const [size, setSize] = useState(0.1);
+  const [drawMode, setDrawMode] = useState(true);
 
   let clearFn: () => void = () => {};
   let undoFn: () => void = () => {};
@@ -58,6 +63,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         redo,
         registerClear,
         registerUndoRedo,
+        drawMode,
+        setDrawMode,
       }}
     >
       {children}

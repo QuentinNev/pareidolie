@@ -1,14 +1,13 @@
 import { CanvasContext } from "@/contexts/CanvasContext";
 import Slider from "@react-native-community/slider";
-import React, { useContext, useState } from "react";
+import React, { useContext } from "react";
 import { Button, View } from "react-native";
 
 const colors = ["black", "red", "blue", "green", "orange", "purple"];
 
 export default function ToolBar() {
-  const { setColor, clearCanvas, undo, redo, setSize } =
+  const { setColor, clearCanvas, undo, redo, setSize, drawMode, setDrawMode } =
     useContext(CanvasContext);
-  const [drawMode, setDrawMode] = useState(true);
 
   return (
     <View>
