@@ -8,7 +8,7 @@ import {
   SkPath,
   useImage,
 } from "@shopify/react-native-skia";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { PanResponder, View } from "react-native";
 
 type Stroke = { path: SkPath; color: string; strokeWidth: number };
@@ -19,32 +19,50 @@ export default function DrawingCanvas() {
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [redoStack, setRedoStack] = useState<Stroke[]>([]);
 
-  const image = useImage(require("../assets/images/background.png")); // mets ton image ici
+  const image = useImage(require("../assets/images/background.png"));
+
+  // position de l’image
+  const [imgPos, setImgPos] = useState({ x: 0, y: 0 });
+  const lastPos = useRef({ x: 0, y: 0 });
 
   const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => drawMode,
+    onStartShouldSetPanResponder: () => true, // toujours capter
     onPanResponderGrant: ({ nativeEvent }) => {
-      if (!drawMode) return;
-      const path = Skia.Path.Make();
-      path.moveTo(nativeEvent.locationX, nativeEvent.locationY);
-      setStrokes((prev) => [...prev, { path, color, strokeWidth: size }]);
-      setRedoStack([]);
+      if (drawMode) {
+        const path = Skia.Path.Make();
+        path.moveTo(nativeEvent.locationX, nativeEvent.locationY);
+        setStrokes((prev) => [...prev, { path, color, strokeWidth: size }]);
+        setRedoStack([]);
+      } else {
+        // mode move -> mémoriser le point de départ
+        lastPos.current = {
+          x: nativeEvent.pageX - imgPos.x,
+          y: nativeEvent.pageY - imgPos.y,
+        };
+      }
     },
     onPanResponderMove: ({ nativeEvent }) => {
-      if (!drawMode) return;
-      setStrokes((prev) => {
-        if (prev.length === 0) return prev;
-        const updated = [...prev];
-        const current = updated[updated.length - 1];
-        const x = nativeEvent.locationX;
-        const y = nativeEvent.locationY;
-        const path = current.path;
-        const lastPoint = path.getLastPt();
-        const cx = (lastPoint.x + x) / 2;
-        const cy = (lastPoint.y + y) / 2;
-        path.quadTo(lastPoint.x, lastPoint.y, cx, cy);
-        return updated;
-      });
+      if (drawMode) {
+        setStrokes((prev) => {
+          if (prev.length === 0) return prev;
+          const updated = [...prev];
+          const current = updated[updated.length - 1];
+          const x = nativeEvent.locationX;
+          const y = nativeEvent.locationY;
+          const path = current.path;
+          const lastPoint = path.getLastPt();
+          const cx = (lastPoint.x + x) / 2;
+          const cy = (lastPoint.y + y) / 2;
+          path.quadTo(lastPoint.x, lastPoint.y, cx, cy);
+          return updated;
+        });
+      } else {
+        // déplacer l’image
+        setImgPos({
+          x: nativeEvent.pageX - lastPos.current.x,
+          y: nativeEvent.pageY - lastPos.current.y,
+        });
+      }
     },
   });
 
@@ -83,7 +101,13 @@ export default function DrawingCanvas() {
         {...panResponder.panHandlers}
       >
         {image && (
-          <SkImage image={image} x={0} y={0} width={400} height={400} />
+          <SkImage
+            image={image}
+            x={imgPos.x}
+            y={imgPos.y}
+            width={400}
+            height={400}
+          />
         )}
         {strokes.map((s, i) => (
           <Path
