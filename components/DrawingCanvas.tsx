@@ -2,6 +2,7 @@
 import { CanvasContext } from "@/contexts/CanvasContext";
 import {
   Canvas,
+  Group,
   Path,
   Skia,
   Image as SkImage,
@@ -21,20 +22,23 @@ export default function DrawingCanvas() {
 
   const image = useImage(require("../assets/images/background.png"));
 
-  // position de l’image
+  // position de l’image + dessin
   const [imgPos, setImgPos] = useState({ x: 0, y: 0 });
   const lastPos = useRef({ x: 0, y: 0 });
 
   const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true, // toujours capter
+    onStartShouldSetPanResponder: () => true,
     onPanResponderGrant: ({ nativeEvent }) => {
       if (drawMode) {
         const path = Skia.Path.Make();
-        path.moveTo(nativeEvent.locationX, nativeEvent.locationY);
+        // coordonnées locales par rapport à l’offset
+        path.moveTo(
+          nativeEvent.locationX - imgPos.x,
+          nativeEvent.locationY - imgPos.y
+        );
         setStrokes((prev) => [...prev, { path, color, strokeWidth: size }]);
         setRedoStack([]);
       } else {
-        // mode move -> mémoriser le point de départ
         lastPos.current = {
           x: nativeEvent.pageX - imgPos.x,
           y: nativeEvent.pageY - imgPos.y,
@@ -47,8 +51,8 @@ export default function DrawingCanvas() {
           if (prev.length === 0) return prev;
           const updated = [...prev];
           const current = updated[updated.length - 1];
-          const x = nativeEvent.locationX;
-          const y = nativeEvent.locationY;
+          const x = nativeEvent.locationX - imgPos.x;
+          const y = nativeEvent.locationY - imgPos.y;
           const path = current.path;
           const lastPoint = path.getLastPt();
           const cx = (lastPoint.x + x) / 2;
@@ -57,7 +61,6 @@ export default function DrawingCanvas() {
           return updated;
         });
       } else {
-        // déplacer l’image
         setImgPos({
           x: nativeEvent.pageX - lastPos.current.x,
           y: nativeEvent.pageY - lastPos.current.y,
@@ -100,24 +103,20 @@ export default function DrawingCanvas() {
         style={{ flex: 1, backgroundColor: "white" }}
         {...panResponder.panHandlers}
       >
-        {image && (
-          <SkImage
-            image={image}
-            x={imgPos.x}
-            y={imgPos.y}
-            width={400}
-            height={400}
-          />
-        )}
-        {strokes.map((s, i) => (
-          <Path
-            key={i}
-            path={s.path}
-            color={s.color}
-            style="stroke"
-            strokeWidth={s.strokeWidth}
-          />
-        ))}
+        <Group transform={[{ translateX: imgPos.x }, { translateY: imgPos.y }]}>
+          {image && (
+            <SkImage image={image} x={0} y={0} width={400} height={400} />
+          )}
+          {strokes.map((s, i) => (
+            <Path
+              key={i}
+              path={s.path}
+              color={s.color}
+              style="stroke"
+              strokeWidth={s.strokeWidth}
+            />
+          ))}
+        </Group>
       </Canvas>
     </View>
   );
