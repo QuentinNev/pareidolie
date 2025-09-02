@@ -30,6 +30,7 @@ export default function DrawingCanvas() {
   // ---- Gestures ----
   let drawing = false;
 
+  let lastOffset = { x: 0, y: 0 };
   const pan = Gesture.Pan()
     .onBegin((e) => {
       if (drawMode) {
