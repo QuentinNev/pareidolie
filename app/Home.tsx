@@ -3,8 +3,6 @@ import ToolBar from "@/components/ToolBar";
 import React from "react";
 import { StyleSheet, View } from "react-native";
 
-const colors = ["black", "red", "blue"];
-
 export default function Home() {
   return (
     <View style={styles.container}>

@@ -9,66 +9,76 @@ import {
   SkPath,
   useImage,
 } from "@shopify/react-native-skia";
-import React, { useContext, useEffect, useRef, useState } from "react";
-import { PanResponder, View } from "react-native";
+import React, { useContext, useEffect, useState } from "react";
+import { View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
 type Stroke = { path: SkPath; color: string; strokeWidth: number };
 
 export default function DrawingCanvas() {
   const { color, size, registerClear, registerUndoRedo, drawMode } =
     useContext(CanvasContext);
+
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [redoStack, setRedoStack] = useState<Stroke[]>([]);
-
   const image = useImage(require("../assets/images/background.png"));
 
-  // position de l’image + dessin
+  // position + zoom
   const [imgPos, setImgPos] = useState({ x: 0, y: 0 });
-  const lastPos = useRef({ x: 0, y: 0 });
+  const [scale, setScale] = useState(1);
 
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onPanResponderGrant: ({ nativeEvent }) => {
+  // ---- Gestures ----
+  let drawing = false;
+
+  const pan = Gesture.Pan()
+    .onBegin((e) => {
       if (drawMode) {
+        drawing = true;
         const path = Skia.Path.Make();
-        // coordonnées locales par rapport à l’offset
-        path.moveTo(
-          nativeEvent.locationX - imgPos.x,
-          nativeEvent.locationY - imgPos.y
-        );
-        setStrokes((prev) => [...prev, { path, color, strokeWidth: size }]);
-        setRedoStack([]);
-      } else {
-        lastPos.current = {
-          x: nativeEvent.pageX - imgPos.x,
-          y: nativeEvent.pageY - imgPos.y,
-        };
+        path.moveTo((e.x - imgPos.x) / scale, (e.y - imgPos.y) / scale);
+        setStrokes((prev) => [
+          ...prev,
+          { path, color, strokeWidth: size / scale },
+        ]);
       }
-    },
-    onPanResponderMove: ({ nativeEvent }) => {
-      if (drawMode) {
+    })
+    .onUpdate((e) => {
+      if (drawMode && drawing) {
         setStrokes((prev) => {
           if (prev.length === 0) return prev;
           const updated = [...prev];
           const current = updated[updated.length - 1];
-          const x = nativeEvent.locationX - imgPos.x;
-          const y = nativeEvent.locationY - imgPos.y;
-          const path = current.path;
-          const lastPoint = path.getLastPt();
-          const cx = (lastPoint.x + x) / 2;
-          const cy = (lastPoint.y + y) / 2;
-          path.quadTo(lastPoint.x, lastPoint.y, cx, cy);
+          const lx = (e.x - imgPos.x) / scale;
+          const ly = (e.y - imgPos.y) / scale;
+          const lastPoint = current.path.getLastPt();
+          const cx = (lastPoint.x + lx) / 2;
+          const cy = (lastPoint.y + ly) / 2;
+          current.path.quadTo(lastPoint.x, lastPoint.y, cx, cy);
           return updated;
         });
-      } else {
+      } else if (!drawMode) {
         setImgPos({
-          x: nativeEvent.pageX - lastPos.current.x,
-          y: nativeEvent.pageY - lastPos.current.y,
+          x: imgPos.x + e.translationX,
+          y: imgPos.y + e.translationY,
         });
       }
-    },
-  });
+    })
+    .onEnd(() => {
+      drawing = false;
+    })
+    .runOnJS(true);
 
+  const pinch = Gesture.Pinch()
+    .onUpdate((e) => {
+      if (!drawMode) {
+        setScale(e.scale);
+      }
+    })
+    .runOnJS(true);
+
+  const gestures = Gesture.Simultaneous(pan, pinch);
+
+  // ---- Canvas Actions ----
   const clear = () => {
     setStrokes([]);
     setRedoStack([]);
@@ -98,26 +108,31 @@ export default function DrawingCanvas() {
   }, [strokes, redoStack]);
 
   return (
-    <View style={{ flex: 1 }}>
-      <Canvas
-        style={{ flex: 1, backgroundColor: "white" }}
-        {...panResponder.panHandlers}
-      >
-        <Group transform={[{ translateX: imgPos.x }, { translateY: imgPos.y }]}>
-          {image && (
-            <SkImage image={image} x={0} y={0} width={400} height={400} />
-          )}
-          {strokes.map((s, i) => (
-            <Path
-              key={i}
-              path={s.path}
-              color={s.color}
-              style="stroke"
-              strokeWidth={s.strokeWidth}
-            />
-          ))}
-        </Group>
-      </Canvas>
-    </View>
+    <GestureDetector gesture={gestures}>
+      <View style={{ flex: 1 }}>
+        <Canvas style={{ flex: 1, backgroundColor: "white" }}>
+          <Group
+            transform={[
+              { translateX: imgPos.x },
+              { translateY: imgPos.y },
+              { scale: scale },
+            ]}
+          >
+            {image && (
+              <SkImage image={image} x={0} y={0} width={400} height={400} />
+            )}
+            {strokes.map((s, i) => (
+              <Path
+                key={i}
+                path={s.path}
+                color={s.color}
+                style="stroke"
+                strokeWidth={s.strokeWidth}
+              />
+            ))}
+          </Group>
+        </Canvas>
+      </View>
+    </GestureDetector>
   );
 }
